@@ -16,6 +16,8 @@ node_modules/
 dist/
 build/
 .cache/
+test-results/
+playwright-report/
 
 # System/editor files
 .DS_Store

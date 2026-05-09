@@ -2,7 +2,7 @@
 
 Mobile-first static webapp POC for studying and practicing the extracted Hebrew vocabulary material.
 
-This is still the webapp validation phase, not the Android app. There is no backend, account system, build step, or non-Hebrew section yet.
+This is the completed web POC before the Android phase. It currently exposes only the Hebrew section. There is no backend, account system, build step, sync, or non-Hebrew section.
 
 ## Data Files
 
@@ -18,11 +18,11 @@ The UI does not rely on CSV, SQLite, extraction scripts, reports, or intermediat
 
 The implementation plan for the mobile-first POC is tracked at `docs/mobile_webapp_plan_for_codex.md`.
 
-## Implemented In This Pass
+## Implemented Features
 
 - Hebrew section only.
 - Study and Practice tabs.
-- Mobile-first app shell with persisted light/dark theme.
+- Mobile-first app shell with persisted dark/light theme toggle.
 - JSONL loading and client-side validation.
 - Hebrew Study mode with dictionary cards, unit filter, examples-only toggle, nikud-insensitive search, shuffle, and reset order.
 - Practice setup with question type, unit, provisional difficulty, mode, numeric question count, Use all, and dynamic timing controls that preserve hidden settings.
@@ -34,7 +34,11 @@ The implementation plan for the mobile-first POC is tracked at `docs/mobile_weba
 - Dictionary lookup bottom sheet after answering or during simulation review by tapping Hebrew words.
 - Hebrew RTL rendering and niqqud/dagesh normalization safeguards.
 
-Difficulty is currently provisional:
+## Known Limitations
+
+- Web POC only; the Android app comes next.
+- Data is local JSONL only; there is no sync or backend.
+- Difficulty is provisional by unit:
 
 ```text
 units 1-7   -> easy
@@ -42,13 +46,9 @@ units 8-14  -> medium
 units 15-20 -> hard
 ```
 
-## Not Implemented Yet
-
-- Android app.
-- Math, English, or other sections.
-- Backend storage or sync.
-- Progress tracking or spaced repetition.
-- Free navigation inside active simulation; this POC uses sequential simulation questions.
+- Simulation is sequential-only.
+- Dictionary lookup is basic single-word lookup, not full idiom or phrase lookup.
+- Math, English, user accounts, progress tracking, and spaced repetition are not implemented.
 
 ## Validation Expectations
 
