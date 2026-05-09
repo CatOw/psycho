@@ -1,0 +1,29 @@
+# Local/generated extraction artifacts
+*.csv
+*.sqlite
+*.db
+*.pdf
+*_report.json
+*_report.md
+*_readme.md
+*_field_changes.jsonl
+psychometry_dictionary_entries*.jsonl
+psychometry_practice_questions.jsonl
+extract_*.py
+
+# Dependencies/build outputs
+node_modules/
+dist/
+build/
+.cache/
+
+# System/editor files
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
+
+# Keep app-facing JSONL data
+!data/
+!data/*.jsonl

@@ -1,0 +1,283 @@
+:root {
+  color-scheme: light;
+  font-family: Arial, "Noto Sans Hebrew", "Noto Sans", "Segoe UI", sans-serif;
+  background: #f6f7f9;
+  color: #17202a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 24px;
+  border-bottom: 1px solid #d9dde3;
+  background: #ffffff;
+}
+
+h1 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+p {
+  margin: 4px 0 0;
+  color: #5d6875;
+}
+
+main {
+  padding: 18px 24px 28px;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid #8894a3;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #17202a;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #eef2f6;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.summary div {
+  padding: 12px 14px;
+  border: 1px solid #d9dde3;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.summary span {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  min-height: 28px;
+}
+
+.summary small {
+  color: #5d6875;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tabs button[aria-pressed="true"] {
+  border-color: #2274a5;
+  background: #eaf5fb;
+  color: #0f4f72;
+  font-weight: 700;
+}
+
+.warning {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid #dfb45f;
+  border-radius: 6px;
+  background: #fff8e5;
+  color: #6f4b00;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid #d9dde3;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.controls label {
+  display: grid;
+  gap: 5px;
+  color: #344052;
+  font-size: 14px;
+}
+
+.controls input[type="search"],
+.controls select {
+  min-width: 220px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #b8c0ca;
+  border-radius: 5px;
+  background: #ffffff;
+}
+
+.controls .check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+}
+
+.status {
+  min-height: 22px;
+  margin: 6px 0 10px;
+  color: #734000;
+}
+
+.status.error {
+  padding: 10px 12px;
+  border: 1px solid #e2a7a7;
+  border-radius: 6px;
+  background: #fff3f3;
+  color: #8a1f1f;
+}
+
+.table-wrap {
+  max-height: calc(100vh - 250px);
+  overflow: auto;
+  border: 1px solid #cfd5dd;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+table {
+  width: 100%;
+  min-width: 1320px;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e3e6ea;
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #e9edf2;
+  color: #1f2a36;
+  text-align: right;
+  white-space: nowrap;
+}
+
+td[lang="he"] {
+  direction: rtl;
+  text-align: right;
+  unicode-bidi: plaintext;
+  font-family: "Noto Sans Hebrew", Arial, "Segoe UI", sans-serif;
+}
+
+tbody tr:nth-child(even) {
+  background: #fafbfc;
+}
+
+tbody tr.needs-review {
+  background: #fff7d6;
+}
+
+tbody tr.selected {
+  outline: 3px solid #2274a5;
+  outline-offset: -3px;
+}
+
+.num,
+.flag,
+.pages,
+.id-cell {
+  direction: ltr;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.type-cell {
+  min-width: 120px;
+  white-space: nowrap;
+}
+
+.term {
+  min-width: 180px;
+  font-weight: 700;
+}
+
+.text {
+  min-width: 260px;
+}
+
+.options-cell {
+  min-width: 220px;
+}
+
+.options-cell ol {
+  margin: 0;
+  padding-inline-start: 24px;
+}
+
+.options-cell li + li {
+  margin-top: 3px;
+}
+
+.empty-source-value {
+  color: #788390;
+  font-style: italic;
+}
+
+@media (max-width: 760px) {
+  .app-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  main {
+    padding: 14px;
+  }
+
+  .summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .controls {
+    align-items: stretch;
+  }
+
+  .controls label,
+  .controls input[type="search"],
+  .controls select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .table-wrap {
+    max-height: calc(100vh - 360px);
+  }
+}
