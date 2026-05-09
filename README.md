@@ -26,6 +26,7 @@ The implementation plan for the mobile-first POC is tracked at `docs/mobile_weba
 - JSONL loading and client-side validation.
 - Hebrew Study mode with dictionary cards, unit filter, examples-only toggle, nikud-insensitive search, shuffle, and reset order.
 - Practice setup with question type, unit, provisional difficulty, mode, numeric question count, Use all, and dynamic timing controls that preserve hidden settings.
+- Practice question order setting for deterministic default order or randomized session order.
 - Practice settings persisted in `localStorage`.
 - Untimed practice mode with one question at a time, large answer buttons, immediate feedback, and next-question flow.
 - Per-question timed practice with reset-per-question countdown, timeout handling, immediate feedback, and next-question flow.

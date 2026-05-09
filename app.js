@@ -22,6 +22,7 @@ const defaultSettings = {
   selectedDifficulties: ["easy", "medium", "hard", "unknown"],
   mode: "untimed",
   questionCount: "10",
+  questionOrder: "default",
   timing: {
     perQuestion: {
       mode: "fixed",
@@ -337,6 +338,8 @@ function syncSetupControlsFromState() {
   els.questionCount.value = settings.questionCount === "all" ? "" : settings.questionCount;
   const modeInput = document.querySelector(`input[name="practiceMode"][value="${settings.mode}"]`);
   if (modeInput) modeInput.checked = true;
+  const orderInput = document.querySelector(`input[name="questionOrder"][value="${settings.questionOrder || "default"}"]`);
+  if (orderInput) orderInput.checked = true;
   els.fixedQuestionSeconds.value = settings.timing.perQuestion.fixedSeconds;
   els.easyQuestionSeconds.value = settings.timing.perQuestion.byDifficultySeconds.easy;
   els.mediumQuestionSeconds.value = settings.timing.perQuestion.byDifficultySeconds.medium;
@@ -422,6 +425,12 @@ function bindEvents() {
       clampQuestionCountToMatching();
       updatePracticeTimingVisibility();
       renderPracticeSetupSummary();
+    });
+  });
+  document.querySelectorAll('input[name="questionOrder"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      state.practiceSetup.questionOrder = input.value;
+      saveSettings();
     });
   });
   document.querySelectorAll('input[name="perQuestionTimingMode"]').forEach((input) => {
@@ -682,7 +691,8 @@ function orderedPracticeQuestions() {
 
   const countState = getQuestionCountState(questions.length);
   if (!countState.valid) return [];
-  return questions.slice(0, countState.count);
+  const selected = questions.slice(0, countState.count);
+  return state.practiceSetup.questionOrder === "random" ? shuffleArray(selected) : selected;
 }
 
 function getPerQuestionSeconds(question) {
