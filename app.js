@@ -8,30 +8,31 @@ const THEME_KEY = "psychoHebrewTheme.v1";
 const STUDY_BATCH_SIZE = 40;
 
 const QUESTION_TYPES = {
-  A: { he: "השלמת משפט", en: "sentence_completion" },
-  B: { he: "מילים נרדפות", en: "synonyms" },
-  C: { he: "מילה והיפוכה", en: "antonyms" },
-  D: { he: "יוצא דופן", en: "odd_one_out" },
+  A: { he: "\u05D4\u05E9\u05DC\u05DE\u05EA \u05DE\u05E9\u05E4\u05D8", en: "sentence_completion" },
+  B: { he: "\u05DE\u05D9\u05DC\u05D9\u05DD \u05E0\u05E8\u05D3\u05E4\u05D5\u05EA", en: "synonyms" },
+  C: { he: "\u05DE\u05D9\u05DC\u05D4 \u05D5\u05D4\u05D9\u05E4\u05D5\u05DB\u05D4", en: "antonyms" },
+  D: { he: "\u05D9\u05D5\u05E6\u05D0 \u05D3\u05D5\u05E4\u05DF", en: "odd_one_out" },
 };
 
-const DIFFICULTIES = ["easy", "medium", "hard", "unknown"];
+const DIFFICULTIES = ["undefined", "easy", "medium", "hard"];
 
 const defaultSettings = {
   selectedTypes: ["A", "B", "C", "D"],
   selectedUnit: "all",
-  selectedDifficulties: ["easy", "medium", "hard", "unknown"],
+  selectedDifficulties: ["undefined", "easy", "medium", "hard"],
   mode: "untimed",
   questionCount: "10",
   questionOrder: "default",
+  answerOrder: "default",
   timing: {
     perQuestion: {
       mode: "fixed",
       fixedSeconds: 30,
       byDifficultySeconds: {
+        undefined: 30,
         easy: 20,
         medium: 35,
         hard: 50,
-        unknown: 30,
       },
     },
     simulation: {
@@ -39,10 +40,10 @@ const defaultSettings = {
       totalSeconds: 600,
       secondsPerQuestion: 45,
       byDifficultySeconds: {
+        undefined: 45,
         easy: 25,
         medium: 40,
         hard: 60,
-        unknown: 45,
       },
     },
   },
@@ -124,7 +125,7 @@ function loadSettings() {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
     if (!stored || typeof stored !== "object") return structuredClone(defaultSettings);
-    return mergeSettings(structuredClone(defaultSettings), stored);
+    return normalizeSettings(mergeSettings(structuredClone(defaultSettings), stored));
   } catch {
     return structuredClone(defaultSettings);
   }
@@ -143,6 +144,28 @@ function mergeSettings(base, stored) {
 
 function saveSettings() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.practiceSetup));
+}
+
+function normalizeSettings(settings) {
+  settings.questionOrder = settings.questionOrder === "random" ? "random" : "default";
+  settings.answerOrder = settings.answerOrder === "random" ? "random" : "default";
+  settings.selectedDifficulties = normalizeDifficultySelection(settings.selectedDifficulties);
+  migrateDifficultyTiming(settings.timing.perQuestion.byDifficultySeconds, 30);
+  migrateDifficultyTiming(settings.timing.simulation.byDifficultySeconds, 45);
+  return settings;
+}
+
+function normalizeDifficultySelection(values) {
+  const selected = new Set((Array.isArray(values) ? values : []).map((value) => value === "unknown" ? "undefined" : value));
+  if (!selected.size) selected.add("undefined");
+  return DIFFICULTIES.filter((difficulty) => selected.has(difficulty));
+}
+
+function migrateDifficultyTiming(values, fallbackSeconds) {
+  if (!Object.prototype.hasOwnProperty.call(values, "undefined")) {
+    values.undefined = Number(values.unknown) || fallbackSeconds;
+  }
+  delete values.unknown;
 }
 
 function loadTheme() {
@@ -175,7 +198,6 @@ function normalizeHebrewDisplay(value) {
   do {
     previous = text;
     text = text
-      .replace(/(^|[^\u05D0-\u05EA\u0591-\u05C7])([\u0591-\u05C7]+)([\u05D0-\u05EA])/g, "$1$3$2")
       .replace(/([\u05D0-\u05EA])\s+([\u0591-\u05C7])/g, "$1$2")
       .replace(/([\u0591-\u05C7])\s+([\u0591-\u05C7])/g, "$1$2");
   } while (text !== previous);
@@ -193,7 +215,7 @@ function stripHebrewMarks(value) {
 function normalizeForSearch(value) {
   return stripHebrewMarks(value)
     .toLowerCase()
-    .replace(/[״"׳'.,!?;:()[\]{}]/g, " ")
+    .replace(/[\u05F4"\u05F3'.,!?;:()[\]{}]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -226,12 +248,9 @@ function normalizeDictionaryEntry(entry) {
   };
 }
 
-function provisionalDifficulty(unit) {
-  const numericUnit = Number(unit);
-  if (numericUnit >= 1 && numericUnit <= 7) return "easy";
-  if (numericUnit >= 8 && numericUnit <= 14) return "medium";
-  if (numericUnit >= 15 && numericUnit <= 20) return "hard";
-  return "unknown";
+function normalizeDifficulty(value) {
+  const difficulty = textValue(value).trim();
+  return DIFFICULTIES.includes(difficulty) && difficulty !== "" ? difficulty : "undefined";
 }
 
 function normalizePracticeQuestion(question) {
@@ -240,7 +259,7 @@ function normalizePracticeQuestion(question) {
     ...question,
     exercise_type_he: normalizeHebrewDisplay(question.exercise_type_he || typeMeta.he),
     exercise_type_en: question.exercise_type_en || typeMeta.en || "",
-    difficulty: question.difficulty || provisionalDifficulty(question.unit),
+    difficulty: normalizeDifficulty(question.difficulty),
     prompt: normalizeHebrewDisplay(question.prompt),
     options: (question.options || []).map((option) => ({
       ...option,
@@ -258,6 +277,34 @@ function createHebrewElement(tagName, text, className = "hebrew") {
   element.dir = "rtl";
   element.textContent = normalizeHebrewDisplay(text);
   return element;
+}
+
+function createLtrElement(tagName, text, className = "") {
+  const element = document.createElement(tagName);
+  element.className = className;
+  element.lang = "en";
+  element.dir = "ltr";
+  element.textContent = textValue(text);
+  return element;
+}
+
+function renderQuestionCategory(question, status = "") {
+  const category = document.createElement("div");
+  category.className = "question-category";
+  const meta = createLtrElement("span", `Unit ${question.unit} · Q${question.question_num}${status ? ` · ${status}` : ""}`, "question-category-meta");
+  const type = createHebrewElement("strong", question.exercise_type_he || question.exercise_type, "question-category-type hebrew");
+  category.append(meta, type);
+  return category;
+}
+
+function createAnswerDetail(label, text, lookupEnabled) {
+  const detail = document.createElement("div");
+  detail.className = "answer-detail";
+  const labelElement = createLtrElement("span", label, "answer-detail-label");
+  const value = createHebrewElement("span", "", "answer-detail-value hebrew");
+  renderLookupText(value, text, lookupEnabled);
+  detail.append(labelElement, value);
+  return detail;
 }
 
 function setWarnings(warnings) {
@@ -319,7 +366,7 @@ function renderDifficultyChoices() {
       updateMultiSelect("selectedDifficulties", difficulty, input.checked);
       renderPracticeSetupSummary();
     });
-    label.append(input, document.createTextNode(difficulty));
+    label.append(input, document.createTextNode(difficulty === "undefined" ? "Undefined" : difficulty));
     els.difficultyChoices.append(label);
   }
 }
@@ -340,17 +387,19 @@ function syncSetupControlsFromState() {
   if (modeInput) modeInput.checked = true;
   const orderInput = document.querySelector(`input[name="questionOrder"][value="${settings.questionOrder || "default"}"]`);
   if (orderInput) orderInput.checked = true;
+  const answerOrderInput = document.querySelector(`input[name="answerOrder"][value="${settings.answerOrder || "default"}"]`);
+  if (answerOrderInput) answerOrderInput.checked = true;
   els.fixedQuestionSeconds.value = settings.timing.perQuestion.fixedSeconds;
+  els.unknownQuestionSeconds.value = settings.timing.perQuestion.byDifficultySeconds.undefined;
   els.easyQuestionSeconds.value = settings.timing.perQuestion.byDifficultySeconds.easy;
   els.mediumQuestionSeconds.value = settings.timing.perQuestion.byDifficultySeconds.medium;
   els.hardQuestionSeconds.value = settings.timing.perQuestion.byDifficultySeconds.hard;
-  els.unknownQuestionSeconds.value = settings.timing.perQuestion.byDifficultySeconds.unknown;
   els.simulationTotalSeconds.value = settings.timing.simulation.totalSeconds;
   els.simulationSecondsPerQuestion.value = settings.timing.simulation.secondsPerQuestion;
+  els.simulationUnknownSeconds.value = settings.timing.simulation.byDifficultySeconds.undefined;
   els.simulationEasySeconds.value = settings.timing.simulation.byDifficultySeconds.easy;
   els.simulationMediumSeconds.value = settings.timing.simulation.byDifficultySeconds.medium;
   els.simulationHardSeconds.value = settings.timing.simulation.byDifficultySeconds.hard;
-  els.simulationUnknownSeconds.value = settings.timing.simulation.byDifficultySeconds.unknown;
   const perQuestionMode = document.querySelector(`input[name="perQuestionTimingMode"][value="${settings.timing.perQuestion.mode}"]`);
   if (perQuestionMode) perQuestionMode.checked = true;
   const simulationMode = document.querySelector(`input[name="simulationTimingMode"][value="${settings.timing.simulation.mode}"]`);
@@ -433,6 +482,12 @@ function bindEvents() {
       saveSettings();
     });
   });
+  document.querySelectorAll('input[name="answerOrder"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      state.practiceSetup.answerOrder = input.value;
+      saveSettings();
+    });
+  });
   document.querySelectorAll('input[name="perQuestionTimingMode"]').forEach((input) => {
     input.addEventListener("change", () => {
       state.practiceSetup.timing.perQuestion.mode = input.value;
@@ -455,13 +510,13 @@ function bindEvents() {
     [els.easyQuestionSeconds, "easy"],
     [els.mediumQuestionSeconds, "medium"],
     [els.hardQuestionSeconds, "hard"],
-    [els.unknownQuestionSeconds, "unknown"],
+    [els.unknownQuestionSeconds, "undefined"],
     [els.simulationTotalSeconds, "simulationTotal"],
     [els.simulationSecondsPerQuestion, "simulationSecondsPerQuestion"],
     [els.simulationEasySeconds, "simulationEasy"],
     [els.simulationMediumSeconds, "simulationMedium"],
     [els.simulationHardSeconds, "simulationHard"],
-    [els.simulationUnknownSeconds, "simulationUnknown"],
+    [els.simulationUnknownSeconds, "simulationUndefined"],
   ].forEach(([input, key]) => {
     input.addEventListener("input", () => updateTimingSetting(key, input.value));
   });
@@ -681,7 +736,7 @@ function getMatchingPracticeQuestions() {
 }
 
 function orderedPracticeQuestions() {
-  const difficultyRank = { easy: 1, medium: 2, hard: 3, unknown: 4 };
+  const difficultyRank = { undefined: 1, easy: 2, medium: 3, hard: 4 };
   const questions = [...getMatchingPracticeQuestions()].sort((a, b) => {
     return difficultyRank[a.difficulty] - difficultyRank[b.difficulty]
       || Number(a.unit) - Number(b.unit)
@@ -691,8 +746,24 @@ function orderedPracticeQuestions() {
 
   const countState = getQuestionCountState(questions.length);
   if (!countState.valid) return [];
-  const selected = questions.slice(0, countState.count);
-  return state.practiceSetup.questionOrder === "random" ? shuffleArray(selected) : selected;
+  const selected = state.practiceSetup.questionOrder === "random"
+    ? shuffleArray(questions).slice(0, countState.count)
+    : questions.slice(0, countState.count);
+  return selected.map(prepareSessionQuestion);
+}
+
+function prepareSessionQuestion(question) {
+  const options = Array.isArray(question.options) ? question.options.map((option) => ({ ...option })) : [];
+  const sessionOptions = state.practiceSetup.answerOrder === "random" && options.length > 1 ? shuffleArray(options) : options;
+  return {
+    ...question,
+    options: options,
+    sessionOptions,
+  };
+}
+
+function questionOptions(question) {
+  return question.sessionOptions || question.options || [];
 }
 
 function getPerQuestionSeconds(question) {
@@ -777,6 +848,11 @@ function startPractice() {
   clampQuestionCountToMatching();
   const questions = orderedPracticeQuestions();
   if (!questions.length) return;
+  const sessionWarnings = validateSessionQuestions(questions);
+  if (sessionWarnings.length) {
+    setWarnings([...validateAll(), ...sessionWarnings]);
+    return;
+  }
   const mode = state.practiceSetup.mode;
   const now = Date.now();
   state.activeSession = {
@@ -800,6 +876,20 @@ function startPractice() {
   els.practiceSession.hidden = false;
   if (mode === "simulation") startSimulationTimer();
   renderPracticeQuestion();
+}
+
+function validateSessionQuestions(questions) {
+  const warnings = [];
+  const ids = new Set();
+  for (const question of questions) {
+    if (ids.has(question.id)) warnings.push(`Session generated duplicate question id ${question.id}`);
+    ids.add(question.id);
+    const optionNums = new Set(questionOptions(question).map((option) => Number(option.option_num)));
+    if (!optionNums.has(Number(question.correct_option_num))) {
+      warnings.push(`Session question ${question.id} is missing its correct source option`);
+    }
+  }
+  return warnings;
 }
 
 function currentQuestion() {
@@ -880,6 +970,7 @@ function renderPracticeQuestion() {
 
   const card = document.createElement("article");
   card.className = "question-card";
+  card.dataset.questionId = question.id;
 
   const top = document.createElement("div");
   top.className = "session-top";
@@ -896,22 +987,21 @@ function renderPracticeQuestion() {
     top.append(timer);
   }
 
-  const title = document.createElement("p");
-  title.className = "muted";
-  title.textContent = `${question.exercise_type}: ${question.exercise_type_he}`;
+  const category = renderQuestionCategory(question);
 
   const prompt = createHebrewElement("div", "", "question-prompt hebrew");
   renderLookupText(prompt, question.prompt, Boolean(answer) && session.mode !== "simulation");
 
   const options = document.createElement("div");
   options.className = "answer-list";
-  for (const option of question.options) {
+  for (const option of questionOptions(question)) {
     if (!answer || session.mode === "simulation") {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "answer-button hebrew";
       button.lang = "he";
       button.dir = "rtl";
+      button.dataset.optionNum = String(option.option_num);
       button.textContent = option.text;
       if (answer?.selectedOptionNum === option.option_num) button.classList.add("selected");
       button.addEventListener("click", () => answerQuestion(option.option_num));
@@ -921,6 +1011,7 @@ function renderPracticeQuestion() {
       answeredOption.className = "answer-button hebrew";
       answeredOption.lang = "he";
       answeredOption.dir = "rtl";
+      answeredOption.dataset.optionNum = String(option.option_num);
       if (option.option_num === question.correct_option_num) answeredOption.classList.add("correct");
       if (option.option_num === answer.selectedOptionNum && !answer.isCorrect) answeredOption.classList.add("wrong");
       renderLookupText(answeredOption, option.text, true);
@@ -928,7 +1019,7 @@ function renderPracticeQuestion() {
     }
   }
 
-  card.append(top, renderSessionProgress(), title, prompt, options);
+  card.append(top, renderSessionProgress(), category, prompt, options);
   els.practiceSession.append(card);
 
   if (session.mode === "simulation") renderSimulationFooter();
@@ -950,6 +1041,8 @@ function renderLookupText(container, text, lookupEnabled) {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "word-token";
+      button.lang = "he";
+      button.dir = "rtl";
       button.textContent = part;
       button.addEventListener("click", (event) => {
         event.stopPropagation();
@@ -994,15 +1087,7 @@ function renderFeedback(question, answer) {
   const status = document.createElement("strong");
   status.textContent = answer.timedOut ? "Time is up" : (answer.isCorrect ? "Correct" : "Wrong");
 
-  const correct = createHebrewElement("p", "", "hebrew");
-  const correctLabel = document.createElement("span");
-  correctLabel.textContent = "Correct answer: ";
-  const correctText = document.createElement("span");
-  correctText.className = "hebrew";
-  correctText.lang = "he";
-  correctText.dir = "rtl";
-  renderLookupText(correctText, question.correct_answer_text, true);
-  correct.append(correctLabel, correctText);
+  const correct = createAnswerDetail("Correct answer", question.correct_answer_text, true);
 
   const hint = document.createElement("p");
   hint.className = "muted";
@@ -1040,7 +1125,7 @@ function renderActivePracticeFooter() {
 }
 
 function nextQuestion() {
-  clearSessionTimer();
+  if (state.activeSession.mode !== "simulation") clearSessionTimer();
   state.activeSession.currentIndex += 1;
   if (state.activeSession.currentIndex >= state.activeSession.questions.length) {
     if (state.activeSession.mode === "simulation") renderSimulationSubmit();
@@ -1145,7 +1230,7 @@ function renderSimulationResults() {
     <p class="muted">${reason}</p>
     <div class="results-grid">
       <div class="result-metric"><strong>${stats.total}</strong><span>Total</span></div>
-      <div class="result-metric"><strong>${stats.score}%</strong><span>Score</span></div>
+      <div class="result-metric success-metric"><strong>${stats.score}%</strong><span>Success</span></div>
       <div class="result-metric"><strong>${stats.correct}</strong><span>Correct</span></div>
       <div class="result-metric"><strong>${stats.wrong}</strong><span>Wrong</span></div>
       <div class="result-metric"><strong>${stats.unanswered}</strong><span>Unanswered</span></div>
@@ -1246,18 +1331,18 @@ function renderReviewCard(question, answer) {
   const card = document.createElement("article");
   card.className = `review-card ${status}`;
   card.dataset.reviewId = question.id;
-  const meta = document.createElement("p");
-  meta.className = "muted";
-  meta.textContent = `${question.id} · ${question.exercise_type} · ${status}`;
+  card.dataset.questionId = question.id;
+  const meta = renderQuestionCategory(question, status);
   const prompt = createHebrewElement("div", "", "question-prompt hebrew");
   renderLookupText(prompt, question.prompt, true);
   const options = document.createElement("div");
   options.className = "answer-list";
-  for (const option of question.options) {
+  for (const option of questionOptions(question)) {
     const item = document.createElement("div");
     item.className = "answer-button hebrew";
     item.lang = "he";
     item.dir = "rtl";
+    item.dataset.optionNum = String(option.option_num);
     if (answer?.selectedOptionNum === option.option_num) item.classList.add("selected");
     if (option.option_num === question.correct_option_num) item.classList.add("correct");
     if (answer?.selectedOptionNum === option.option_num && !answer.isCorrect) item.classList.add("wrong");
@@ -1275,29 +1360,9 @@ function renderReviewCard(question, answer) {
   }
   const details = document.createElement("div");
   details.className = "feedback-card";
-  const selected = question.options.find((option) => option.option_num === answer?.selectedOptionNum);
-  const selectedLine = document.createElement("p");
-  selectedLine.className = "hebrew";
-  selectedLine.lang = "he";
-  selectedLine.dir = "rtl";
-  selectedLine.append(document.createTextNode("Selected: "));
-  const selectedText = document.createElement("span");
-  selectedText.className = "hebrew";
-  selectedText.lang = "he";
-  selectedText.dir = "rtl";
-  renderLookupText(selectedText, selected ? selected.text : "unanswered", Boolean(selected));
-  selectedLine.append(selectedText);
-  const correctLine = document.createElement("p");
-  correctLine.className = "hebrew";
-  correctLine.lang = "he";
-  correctLine.dir = "rtl";
-  correctLine.append(document.createTextNode("Correct: "));
-  const correctText = document.createElement("span");
-  correctText.className = "hebrew";
-  correctText.lang = "he";
-  correctText.dir = "rtl";
-  renderLookupText(correctText, question.correct_answer_text, true);
-  correctLine.append(correctText);
+  const selected = questionOptions(question).find((option) => option.option_num === answer?.selectedOptionNum);
+  const selectedLine = createAnswerDetail("Selected answer", selected ? selected.text : "Unanswered", Boolean(selected));
+  const correctLine = createAnswerDetail("Correct answer", question.correct_answer_text, true);
   details.append(selectedLine, correctLine);
   card.append(meta, prompt, options, details);
   return card;
@@ -1318,7 +1383,7 @@ function renderPracticeComplete() {
     <p class="muted">${session.mode === "perQuestionTimed" ? "Timed per-question practice" : "Untimed practice"}</p>
     <div class="results-grid">
       <div class="result-metric"><strong>${stats.total}</strong><span>Total</span></div>
-      <div class="result-metric"><strong>${stats.score}%</strong><span>Score</span></div>
+      <div class="result-metric success-metric"><strong>${stats.score}%</strong><span>Success</span></div>
       <div class="result-metric"><strong>${stats.correct}</strong><span>Correct</span></div>
       <div class="result-metric"><strong>${stats.wrong}</strong><span>Wrong</span></div>
       <div class="result-metric"><strong>${stats.unanswered}</strong><span>Unanswered</span></div>
@@ -1424,6 +1489,10 @@ function validatePractice(rows) {
   const units = new Set(rows.map((row) => Number(row.unit)));
   const reviewCount = rows.filter(isNeedsReview).length;
   const target = rows.find((row) => row.id === "U06-D-04");
+  const difficultyCounts = rows.reduce((counts, row) => {
+    counts[row.difficulty] = (counts[row.difficulty] || 0) + 1;
+    return counts;
+  }, {});
   const badBuckets = [];
 
   for (let unit = 1; unit <= 20; unit += 1) {
@@ -1437,10 +1506,16 @@ function validatePractice(rows) {
   if (units.size !== 20) warnings.push(`Practice expected 20 units, found ${units.size}`);
   if (badBuckets.length) warnings.push(`Practice unit/type buckets not equal to 8: ${badBuckets.join(", ")}`);
   if (reviewCount !== 0) warnings.push(`Practice unresolved needs_review count is ${reviewCount}`);
-  if (!target || target.correct_answer_text !== "טירה" || Number(target.correct_option_num) !== 1 || isNeedsReview(target)) {
-    warnings.push("Practice U06-D-04 is not corrected to טירה");
+  if ((difficultyCounts.undefined || 0) !== rows.length) {
+    warnings.push(`Practice expected all ${rows.length} questions to have undefined difficulty, found ${difficultyCounts.undefined || 0}`);
   }
-  console.log("Practice validation", { rows: rows.length, units: units.size, badBuckets, reviewCount, target });
+  for (const difficulty of ["easy", "medium", "hard"]) {
+    if ((difficultyCounts[difficulty] || 0) !== 0) warnings.push(`Practice ${difficulty} difficulty count should currently be 0`);
+  }
+  if (!target || target.correct_answer_text !== "\u05D8\u05D9\u05E8\u05D4" || Number(target.correct_option_num) !== 1 || isNeedsReview(target)) {
+    warnings.push("Practice U06-D-04 is not corrected to \u05D8\u05D9\u05E8\u05D4");
+  }
+  console.log("Practice validation", { rows: rows.length, units: units.size, badBuckets, reviewCount, difficultyCounts, target });
   return warnings;
 }
 

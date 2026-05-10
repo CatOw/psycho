@@ -25,8 +25,8 @@ The implementation plan for the mobile-first POC is tracked at `docs/mobile_weba
 - Mobile-first app shell with persisted dark/light theme toggle.
 - JSONL loading and client-side validation.
 - Hebrew Study mode with dictionary cards, unit filter, examples-only toggle, nikud-insensitive search, shuffle, and reset order.
-- Practice setup with question type, unit, provisional difficulty, mode, numeric question count, Use all, and dynamic timing controls that preserve hidden settings.
-- Practice question order setting for deterministic default order or randomized session order.
+- Practice setup with question type, unit, difficulty, mode, numeric question count, Use all, and dynamic timing controls that preserve hidden settings.
+- Practice question and answer order settings for deterministic default order or randomized session order.
 - Practice settings persisted in `localStorage`.
 - Untimed practice mode with one question at a time, large answer buttons, immediate feedback, and next-question flow.
 - Per-question timed practice with reset-per-question countdown, timeout handling, immediate feedback, and next-question flow.
@@ -39,13 +39,9 @@ The implementation plan for the mobile-first POC is tracked at `docs/mobile_weba
 
 - Web POC only; the Android app comes next.
 - Data is local JSONL only; there is no sync or backend.
-- Difficulty is provisional by unit:
-
-```text
-units 1-7   -> easy
-units 8-14  -> medium
-units 15-20 -> hard
-```
+- Difficulty exists in the app model, but the current extracted data has no difficulty labels.
+- All current practice questions are treated as `undefined` difficulty.
+- Easy, medium, and hard remain in the UI/model for future real difficulty data.
 
 - Simulation is sequential-only.
 - Dictionary lookup is basic single-word lookup, not full idiom or phrase lookup.

@@ -239,21 +239,12 @@ Recommended shape:
 }
 ```
 
-If real difficulty data does not exist yet:
-- Add the `difficulty` field in the app model.
-- Use `"unknown"` as a fallback.
+The current extracted practice data has no real difficulty labels.
+- Keep the `difficulty` field in the app model.
+- Treat all current questions as `"undefined"` difficulty.
+- Keep easy, medium, and hard in the UI/model for future real difficulty data.
 - The UI should still support difficulty filters.
-- If all current questions are unknown, show that clearly.
-- Do not invent real difficulty labels unless explicitly implemented as temporary/demo data.
-
-Acceptable temporary difficulty strategies:
-1. Keep all questions as `unknown`.
-2. Or derive provisional difficulty from unit number:
-   - units 1-7 = easy
-   - units 8-14 = medium
-   - units 15-20 = hard
-
-If using provisional difficulty, label it clearly in code/UI as provisional.
+- Do not derive provisional difficulty from unit number.
 
 ## Hebrew section: Study mode
 
@@ -335,7 +326,7 @@ The setup screen should allow selecting:
    - Easy
    - Medium
    - Hard
-   - Unknown, if present
+   - Undefined, for the current extracted data
    - Any combination
 
 4. Ordering
@@ -379,7 +370,7 @@ const defaultTimingSettings = {
       easy: 20,
       medium: 35,
       hard: 50,
-      unknown: 30
+      undefined: 30
     }
   },
   simulation: {
@@ -390,7 +381,7 @@ const defaultTimingSettings = {
       easy: 25,
       medium: 40,
       hard: 60,
-      unknown: 45
+      undefined: 45
     }
   }
 };
@@ -407,7 +398,7 @@ For “Questions with time per question”, allow:
    - Easy: configurable
    - Medium: configurable
    - Hard: configurable
-   - Unknown: configurable
+- Undefined: configurable
 
 UI:
 - Radio/segmented choice:
@@ -419,7 +410,7 @@ UI:
   - easy = 20 seconds
   - medium = 35 seconds
   - hard = 50 seconds
-  - unknown = 30 seconds
+  - undefined = 30 seconds
 
 Behavior:
 - Timer resets for each question.
@@ -439,7 +430,7 @@ For simulation mode, allow:
 3. Difficulty-based calculated total time
    - Sum configured seconds by difficulty for selected questions
    - Easy + medium + hard can each have different seconds
-   - Unknown should have its own configurable fallback
+- Undefined should have its own configurable fallback
 
 UI:
 - Radio/segmented choice:
@@ -457,7 +448,7 @@ Reasonable defaults:
 - easy = 25 seconds
 - medium = 40 seconds
 - hard = 60 seconds
-- unknown = 45 seconds
+- undefined = 45 seconds
 
 Behavior:
 - One total timer for the whole simulation.
@@ -569,18 +560,10 @@ Mobile UI:
 ## Practice ordering and difficulty
 
 Default ordering:
-- Easy → Medium → Hard → Unknown
+- Undefined → Easy → Medium → Hard
 - Within each difficulty, keep source order unless shuffle is enabled.
 
-If using provisional difficulty from unit number:
-- units 1-7 = easy
-- units 8-14 = medium
-- units 15-20 = hard
-
-Make this explicit in code comments and optionally in UI:
-`Difficulty is currently provisional based on unit number.`
-
-Do not block the app if difficulty is missing.
+Current extracted data should use `undefined` difficulty for every question. Do not derive difficulty from unit number. Easy, medium, and hard remain available for future real difficulty data.
 
 ## Click-any-word dictionary popup
 
@@ -648,7 +631,7 @@ const appState = {
   practiceSetup: {
     selectedTypes: ["A", "B", "C", "D"],
     selectedUnits: "all",
-    selectedDifficulties: ["easy", "medium", "hard", "unknown"],
+    selectedDifficulties: ["undefined", "easy", "medium", "hard"],
     mode: "untimed", // "untimed" | "perQuestionTimed" | "simulation"
     questionCount: "all",
     order: "easyToHard"
@@ -661,7 +644,7 @@ const appState = {
         easy: 20,
         medium: 35,
         hard: 50,
-        unknown: 30
+        undefined: 30
       }
     },
     simulation: {
@@ -672,7 +655,7 @@ const appState = {
         easy: 25,
         medium: 40,
         hard: 60,
-        unknown: 45
+        undefined: 45
       }
     }
   },

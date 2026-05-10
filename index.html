@@ -59,7 +59,7 @@
           <div id="practiceSetup" class="setup-panel">
             <section class="setup-card">
               <h2>Practice setup</h2>
-              <p class="muted">Difficulty is provisional for now: units 1-7 easy, 8-14 medium, 15-20 hard.</p>
+              <p class="muted">Difficulty labels are not in the extracted data yet; current questions use Undefined.</p>
             </section>
 
             <section class="setup-card">
@@ -102,6 +102,14 @@
               </div>
             </section>
 
+            <section class="setup-card">
+              <h3>Answer order</h3>
+              <div class="choice-grid compact-grid">
+                <label><input type="radio" name="answerOrder" value="default"> Default answer order</label>
+                <label><input type="radio" name="answerOrder" value="random"> Random answer order</label>
+              </div>
+            </section>
+
             <section id="timingControls" class="setup-card timing-card" hidden>
               <h3 id="timingControlsTitle">Timing controls</h3>
               <div id="perQuestionTimingPanel" class="timing-panel">
@@ -132,7 +140,7 @@
                     <input id="hardQuestionSeconds" type="number" min="1" step="1">
                   </label>
                   <label class="field">
-                    <span>Unknown seconds</span>
+                    <span>Undefined seconds</span>
                     <input id="unknownQuestionSeconds" type="number" min="1" step="1">
                   </label>
                 </div>
@@ -173,7 +181,7 @@
                     <input id="simulationHardSeconds" type="number" min="1" step="1">
                   </label>
                   <label class="field">
-                    <span>Simulation unknown seconds</span>
+                    <span>Simulation undefined seconds</span>
                     <input id="simulationUnknownSeconds" type="number" min="1" step="1">
                   </label>
                 </div>
