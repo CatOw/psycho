@@ -54,6 +54,7 @@ const state = {
   dictionaryEntries: [],
   practiceQuestions: [],
   dictionaryLookupEntries: [],
+  dictionaryDisplayTerms: new Map(),
   validationWarnings: [],
   study: {
     search: "",
@@ -268,6 +269,55 @@ function normalizePracticeQuestion(question) {
     correct_answer_text: normalizeHebrewDisplay(question.correct_answer_text),
     notes: normalizeHebrewDisplay(question.notes),
   };
+}
+
+function buildDictionaryDisplayTerms(entries) {
+  const terms = new Map();
+  for (const entry of entries) {
+    const displayTerm = normalizeHebrewDisplay(entry.term);
+    for (const value of [entry.term_unpointed, stripHebrewMarks(entry.term), entry.term]) {
+      const key = normalizeForSearch(value);
+      if (key && displayTerm && !terms.has(key)) terms.set(key, displayTerm);
+    }
+  }
+  return terms;
+}
+
+function pointHebrewTextFromDictionary(text, terms = state.dictionaryDisplayTerms) {
+  const displayText = normalizeHebrewDisplay(text);
+  if (!displayText) return "";
+
+  const exact = terms.get(normalizeForSearch(displayText));
+  if (exact) return exact;
+
+  return displayText.split(/(\s+|[,.;:!?]+)/).map((part) => {
+    if (!/[\u05D0-\u05EA]/.test(part)) return part;
+    return terms.get(normalizeForSearch(part)) || part;
+  }).join("");
+}
+
+function addPracticeDisplayText(question) {
+  return {
+    ...question,
+    prompt_display: pointHebrewTextFromDictionary(question.prompt),
+    options: (question.options || []).map((option) => ({
+      ...option,
+      display_text: pointHebrewTextFromDictionary(option.text),
+    })),
+    correct_answer_display: pointHebrewTextFromDictionary(question.correct_answer_text),
+  };
+}
+
+function optionDisplayText(option) {
+  return normalizeHebrewDisplay(option.display_text || option.text);
+}
+
+function questionPromptDisplay(question) {
+  return normalizeHebrewDisplay(question.prompt_display || question.prompt);
+}
+
+function correctAnswerDisplay(question) {
+  return normalizeHebrewDisplay(question.correct_answer_display || question.correct_answer_text);
 }
 
 function createHebrewElement(tagName, text, className = "hebrew") {
@@ -990,7 +1040,7 @@ function renderPracticeQuestion() {
   const category = renderQuestionCategory(question);
 
   const prompt = createHebrewElement("div", "", "question-prompt hebrew");
-  renderLookupText(prompt, question.prompt, Boolean(answer) && session.mode !== "simulation");
+  renderLookupText(prompt, questionPromptDisplay(question), Boolean(answer) && session.mode !== "simulation");
 
   const options = document.createElement("div");
   options.className = "answer-list";
@@ -1002,7 +1052,7 @@ function renderPracticeQuestion() {
       button.lang = "he";
       button.dir = "rtl";
       button.dataset.optionNum = String(option.option_num);
-      button.textContent = option.text;
+      button.textContent = optionDisplayText(option);
       if (answer?.selectedOptionNum === option.option_num) button.classList.add("selected");
       button.addEventListener("click", () => answerQuestion(option.option_num));
       options.append(button);
@@ -1014,7 +1064,7 @@ function renderPracticeQuestion() {
       answeredOption.dataset.optionNum = String(option.option_num);
       if (option.option_num === question.correct_option_num) answeredOption.classList.add("correct");
       if (option.option_num === answer.selectedOptionNum && !answer.isCorrect) answeredOption.classList.add("wrong");
-      renderLookupText(answeredOption, option.text, true);
+      renderLookupText(answeredOption, optionDisplayText(option), true);
       options.append(answeredOption);
     }
   }
@@ -1087,7 +1137,7 @@ function renderFeedback(question, answer) {
   const status = document.createElement("strong");
   status.textContent = answer.timedOut ? "Time is up" : (answer.isCorrect ? "Correct" : "Wrong");
 
-  const correct = createAnswerDetail("Correct answer", question.correct_answer_text, true);
+  const correct = createAnswerDetail("Correct answer", correctAnswerDisplay(question), true);
 
   const hint = document.createElement("p");
   hint.className = "muted";
@@ -1334,7 +1384,7 @@ function renderReviewCard(question, answer) {
   card.dataset.questionId = question.id;
   const meta = renderQuestionCategory(question, status);
   const prompt = createHebrewElement("div", "", "question-prompt hebrew");
-  renderLookupText(prompt, question.prompt, true);
+  renderLookupText(prompt, questionPromptDisplay(question), true);
   const options = document.createElement("div");
   options.className = "answer-list";
   for (const option of questionOptions(question)) {
@@ -1349,7 +1399,7 @@ function renderReviewCard(question, answer) {
     const badges = [];
     if (answer?.selectedOptionNum === option.option_num) badges.push("Selected");
     if (option.option_num === question.correct_option_num) badges.push("Correct");
-    renderLookupText(item, option.text, true);
+    renderLookupText(item, optionDisplayText(option), true);
     if (badges.length) {
       const badge = document.createElement("span");
       badge.className = "answer-badge";
@@ -1361,8 +1411,8 @@ function renderReviewCard(question, answer) {
   const details = document.createElement("div");
   details.className = "feedback-card";
   const selected = questionOptions(question).find((option) => option.option_num === answer?.selectedOptionNum);
-  const selectedLine = createAnswerDetail("Selected answer", selected ? selected.text : "Unanswered", Boolean(selected));
-  const correctLine = createAnswerDetail("Correct answer", question.correct_answer_text, true);
+  const selectedLine = createAnswerDetail("Selected answer", selected ? optionDisplayText(selected) : "Unanswered", Boolean(selected));
+  const correctLine = createAnswerDetail("Correct answer", correctAnswerDisplay(question), true);
   details.append(selectedLine, correctLine);
   card.append(meta, prompt, options, details);
   return card;
@@ -1571,7 +1621,8 @@ async function loadAll() {
       loadDataset("practice", normalizePracticeQuestion),
     ]);
     state.dictionaryEntries = dictionary;
-    state.practiceQuestions = practice;
+    state.dictionaryDisplayTerms = buildDictionaryDisplayTerms(dictionary);
+    state.practiceQuestions = practice.map(addPracticeDisplayText);
     state.dictionaryLookupEntries = dictionary.map((entry) => ({
       ...entry,
       termSearch: normalizeForSearch(entry.term),
