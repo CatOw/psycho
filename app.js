@@ -352,7 +352,7 @@ function createAnswerDetail(label, text, lookupEnabled) {
   detail.className = "answer-detail";
   const labelElement = createLtrElement("span", label, "answer-detail-label");
   const value = createHebrewElement("span", "", "answer-detail-value hebrew");
-  renderLookupText(value, text, lookupEnabled);
+  renderStableLookupText(value, text, lookupEnabled);
   detail.append(labelElement, value);
   return detail;
 }
@@ -1064,7 +1064,7 @@ function renderPracticeQuestion() {
       answeredOption.dataset.optionNum = String(option.option_num);
       if (option.option_num === question.correct_option_num) answeredOption.classList.add("correct");
       if (option.option_num === answer.selectedOptionNum && !answer.isCorrect) answeredOption.classList.add("wrong");
-      renderLookupText(answeredOption, optionDisplayText(option), true);
+      renderStableLookupText(answeredOption, optionDisplayText(option), true);
       options.append(answeredOption);
     }
   }
@@ -1105,6 +1105,31 @@ function renderLookupText(container, text, lookupEnabled) {
       span.textContent = part;
       container.append(span);
     }
+  }
+}
+
+function renderStableLookupText(container, text, lookupEnabled) {
+  const displayText = normalizeHebrewDisplay(text);
+  container.replaceChildren();
+  container.classList.remove("lookup-text");
+  container.classList.toggle("lookup-phrase", Boolean(lookupEnabled && /[\u05D0-\u05EA]/.test(displayText)));
+  container.textContent = displayText;
+  if (lookupEnabled && /[\u05D0-\u05EA]/.test(displayText)) {
+    container.tabIndex = 0;
+    container.setAttribute("role", "button");
+    container.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openLookupSheet(displayText);
+    });
+    container.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openLookupSheet(displayText);
+      }
+    });
+  } else {
+    container.removeAttribute("role");
+    container.removeAttribute("tabindex");
   }
 }
 
@@ -1402,7 +1427,7 @@ function renderReviewCard(question, answer) {
     const badges = [];
     if (answer?.selectedOptionNum === option.option_num) badges.push("Selected");
     if (option.option_num === question.correct_option_num) badges.push("Correct");
-    renderLookupText(item, optionDisplayText(option), true);
+    renderStableLookupText(item, optionDisplayText(option), true);
     if (badges.length) {
       const badge = document.createElement("span");
       badge.className = "answer-badge";
