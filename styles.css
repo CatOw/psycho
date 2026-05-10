@@ -347,14 +347,6 @@ main {
   unicode-bidi: isolate;
 }
 
-.lookup-phrase {
-  direction: rtl;
-  unicode-bidi: plaintext;
-  cursor: pointer;
-  text-decoration: underline dotted var(--accent);
-  text-underline-offset: 4px;
-}
-
 .empty-source-value {
   color: var(--muted);
   font-style: italic;
