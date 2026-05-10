@@ -330,6 +330,23 @@ main {
   line-height: 1.85;
 }
 
+.lookup-text {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: baseline;
+  gap: 0 0.32em;
+  direction: rtl;
+  unicode-bidi: isolate;
+  text-align: right;
+}
+
+.lookup-token {
+  direction: rtl;
+  unicode-bidi: isolate;
+}
+
 .empty-source-value {
   color: var(--muted);
   font-style: italic;
@@ -697,6 +714,8 @@ main {
   border-radius: 0;
   background: transparent;
   color: inherit;
+  direction: rtl;
+  unicode-bidi: isolate;
   min-height: 0;
   padding: 0 1px;
   font: inherit;

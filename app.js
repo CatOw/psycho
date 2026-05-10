@@ -1079,11 +1079,11 @@ function renderPracticeQuestion() {
 
 function renderLookupText(container, text, lookupEnabled) {
   container.replaceChildren();
-  const parts = normalizeHebrewDisplay(text).split(/(\s+)/);
+  container.classList.toggle("lookup-text", Boolean(lookupEnabled));
+  const parts = normalizeHebrewDisplay(text).split(/(\s+|[,.;:!?]+)/);
   for (const part of parts) {
     if (!part) continue;
     if (/^\s+$/.test(part)) {
-      container.append(document.createTextNode(part));
       continue;
     }
     const clean = normalizeForSearch(part);
@@ -1100,7 +1100,10 @@ function renderLookupText(container, text, lookupEnabled) {
       });
       container.append(button);
     } else {
-      container.append(document.createTextNode(part));
+      const span = document.createElement("span");
+      span.className = "lookup-token";
+      span.textContent = part;
+      container.append(span);
     }
   }
 }
